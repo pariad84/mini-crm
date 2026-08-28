@@ -16,10 +16,10 @@
     function deleteColumn(resourceKey) {
         return {
             name : 'delete', label : '',
-            list : { render : 'function(data) { var b = document.createElement("button"); ' +
-                'b.textContent = "Delete"; b.addEventListener("click", function(e) { ' +
-                'e.stopPropagation(); fn.data.delete({ key: "' + resourceKey + '", id: data.id }); ' +
-                'e.target.closest(".__page").refresh(); }); return b; }' },
+            list : { render : 'function(data) { return fn.element.create({ tagName: "button", ' +
+                'text: "Delete", event: { click: function(e) { e.stopPropagation(); ' +
+                'fn.data.delete({ key: "' + resourceKey + '", id: data.id }); ' +
+                'e.target.closest(".__page").refresh(); } } }); }' },
         };
     }
     accountResource.columns.push(deleteColumn('account'));
