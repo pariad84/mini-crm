@@ -36,6 +36,31 @@
         fn.data.insert({ key : 'account', data : { name : 'Initech', industry : 'Software', website : 'initech.example' } });
     }
 
+    var contactResource = {
+        key : 'contact',
+        columns : [
+            { name : 'name', label : 'Name', list : { type : 'text' }, form : { type : 'text' } },
+            { name : 'email', label : 'Email', list : { type : 'text' }, form : { type : 'text' } },
+            { name : 'phone', label : 'Phone', form : { type : 'text' } },
+            { name : 'accountId', label : 'Account', list : { type : 'text' }, form : { type : 'select', resource : { key : 'account', label : 'name' } } },
+        ],
+    };
+    contactResource.columns.push(deleteColumn('contact'));
+
+    function contactDatas() {
+        return fn.data.select({ key : 'contact' }).map(function(row) {
+            return Object.assign({ id : row.id }, row.data);
+        });
+    }
+
+    if (fn.data.select({ key : 'contact' }).length === 0) {
+        var accounts = fn.data.select({ key : 'account' });
+        var acme = accounts[0], globex = accounts[1], initech = accounts[2];
+        fn.data.insert({ key : 'contact', data : { name : 'Jane Doe', email : 'jane@acme.example', phone : '555-0101', accountId : acme.id } });
+        fn.data.insert({ key : 'contact', data : { name : 'John Roe', email : 'john@globex.example', phone : '555-0102', accountId : globex.id } });
+        fn.data.insert({ key : 'contact', data : { name : 'Alice Smith', email : 'alice@initech.example', phone : '555-0103', accountId : initech.id } });
+    }
+
     function newButton(opt) {
         return fn.element.create({
             tagName : 'button',
@@ -89,6 +114,22 @@
     });
 
     fn.component.layout.set({
+        name : 'contacts-page',
+        layout : function() {
+            var page = fn.element.create({ tagName : 'div', attribute : { class : '__page' }, style : { padding : '24px' } });
+            fn.element.create({ tagName : 'h1', text : 'Contacts', parent : page });
+            page.appendChild(newButton({ text : '+ New Contact', title : 'New Contact', resource : contactResource, caller : page }));
+            var listContainer = fn.element.create({ tagName : 'div', parent : page });
+            page.refresh = function() {
+                Array.from(listContainer.children).forEach(function(c) { c.remove(); });
+                fn.component.create({ name : 'list', resource : contactResource, datas : contactDatas(), caller : page, parent : listContainer });
+            };
+            page.refresh();
+            return page;
+        }
+    });
+
+    fn.component.layout.set({
         name : 'nav',
         layout : function(opt = {}) {
             var nav = fn.element.create({
@@ -128,13 +169,14 @@
         links : [
             { href : '#/', text : 'Home' },
             { href : '#/accounts', text : 'Accounts' },
+            { href : '#/contacts', text : 'Contacts' },
         ],
         parent : document.body,
     });
 
     fn.component.create({
         name : 'router',
-        routes : { '#/' : 'home-page', '#/accounts' : 'accounts-page' },
+        routes : { '#/' : 'home-page', '#/accounts' : 'accounts-page', '#/contacts' : 'contacts-page' },
         parent : document.body,
     });
 })();
