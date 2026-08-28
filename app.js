@@ -61,6 +61,60 @@
         fn.data.insert({ key : 'contact', data : { name : 'Alice Smith', email : 'alice@initech.example', phone : '555-0103', accountId : initech.id } });
     }
 
+    var stageResource = {
+        key : 'stage',
+        columns : [
+            { name : 'name', label : 'Name', list : { type : 'text' }, form : { type : 'text' } },
+        ],
+    };
+    stageResource.columns.push(deleteColumn('stage'));
+
+    function stageDatas() {
+        return fn.data.select({ key : 'stage' }).map(function(row) {
+            return Object.assign({ id : row.id }, row.data);
+        });
+    }
+
+    if (fn.data.select({ key : 'stage' }).length === 0) {
+        fn.data.insert({ key : 'stage', data : { name : 'Lead' } });
+        fn.data.insert({ key : 'stage', data : { name : 'Qualified' } });
+        fn.data.insert({ key : 'stage', data : { name : 'Proposal' } });
+        fn.data.insert({ key : 'stage', data : { name : 'Won' } });
+        fn.data.insert({ key : 'stage', data : { name : 'Lost' } });
+    }
+
+    var dealResource = {
+        key : 'deal',
+        columns : [
+            { name : 'name', label : 'Name', list : { type : 'text' }, form : { type : 'text' } },
+            { name : 'accountId', label : 'Account', list : { type : 'text' }, form : { type : 'select', resource : { key : 'account', label : 'name' } } },
+            { name : 'contactId', label : 'Contact', list : { type : 'text' }, form : { type : 'select', resource : { key : 'contact', label : 'name' } } },
+            { name : 'amount', label : 'Amount', list : { type : 'text' }, form : { type : 'text' } },
+            { name : 'stageId', label : 'Stage', list : { type : 'text' }, form : { type : 'select', resource : { key : 'stage', label : 'name' } } },
+            { name : 'closeDate', label : 'Close Date', list : { type : 'text' }, form : { type : 'text' } },
+            { name : 'notes', label : 'Notes', form : { type : 'textarea' } },
+        ],
+    };
+    dealResource.columns.push(deleteColumn('deal'));
+
+    function dealDatas() {
+        return fn.data.select({ key : 'deal' }).map(function(row) {
+            return Object.assign({ id : row.id }, row.data);
+        });
+    }
+
+    if (fn.data.select({ key : 'deal' }).length === 0) {
+        var dealAccounts = fn.data.select({ key : 'account' });
+        var dealContacts = fn.data.select({ key : 'contact' });
+        var dealStages = fn.data.select({ key : 'stage' });
+        var acmeAcct = dealAccounts[0], globexAcct = dealAccounts[1], initechAcct = dealAccounts[2];
+        var janeContact = dealContacts[0], johnContact = dealContacts[1], aliceContact = dealContacts[2];
+        var leadStage = dealStages[0], qualifiedStage = dealStages[1], proposalStage = dealStages[2];
+        fn.data.insert({ key : 'deal', data : { name : 'Acme Expansion', accountId : acmeAcct.id, contactId : janeContact.id, amount : '45000', stageId : proposalStage.id, closeDate : '2026-09-15', notes : 'Expanding into two new plants.' } });
+        fn.data.insert({ key : 'deal', data : { name : 'Globex Renewal', accountId : globexAcct.id, contactId : johnContact.id, amount : '18000', stageId : qualifiedStage.id, closeDate : '2026-10-01', notes : 'Annual contract renewal.' } });
+        fn.data.insert({ key : 'deal', data : { name : 'Initech Pilot', accountId : initechAcct.id, contactId : aliceContact.id, amount : '9000', stageId : leadStage.id, closeDate : '2026-11-20', notes : 'Pilot for the new analytics module.' } });
+    }
+
     function newButton(opt) {
         return fn.element.create({
             tagName : 'button',
@@ -130,6 +184,38 @@
     });
 
     fn.component.layout.set({
+        name : 'deals-page',
+        layout : function() {
+            var page = fn.element.create({ tagName : 'div', attribute : { class : '__page' }, style : { padding : '24px' } });
+            fn.element.create({ tagName : 'h1', text : 'Deals', parent : page });
+            page.appendChild(newButton({ text : '+ New Deal', title : 'New Deal', resource : dealResource, caller : page }));
+            var listContainer = fn.element.create({ tagName : 'div', parent : page });
+            page.refresh = function() {
+                Array.from(listContainer.children).forEach(function(c) { c.remove(); });
+                fn.component.create({ name : 'list', resource : dealResource, datas : dealDatas(), caller : page, parent : listContainer });
+            };
+            page.refresh();
+            return page;
+        }
+    });
+
+    fn.component.layout.set({
+        name : 'stages-page',
+        layout : function() {
+            var page = fn.element.create({ tagName : 'div', attribute : { class : '__page' }, style : { padding : '24px' } });
+            fn.element.create({ tagName : 'h1', text : 'Stages', parent : page });
+            page.appendChild(newButton({ text : '+ New Stage', title : 'New Stage', resource : stageResource, caller : page }));
+            var listContainer = fn.element.create({ tagName : 'div', parent : page });
+            page.refresh = function() {
+                Array.from(listContainer.children).forEach(function(c) { c.remove(); });
+                fn.component.create({ name : 'list', resource : stageResource, datas : stageDatas(), caller : page, parent : listContainer });
+            };
+            page.refresh();
+            return page;
+        }
+    });
+
+    fn.component.layout.set({
         name : 'nav',
         layout : function(opt = {}) {
             var nav = fn.element.create({
@@ -170,13 +256,21 @@
             { href : '#/', text : 'Home' },
             { href : '#/accounts', text : 'Accounts' },
             { href : '#/contacts', text : 'Contacts' },
+            { href : '#/deals', text : 'Deals' },
+            { href : '#/stages', text : 'Stages' },
         ],
         parent : document.body,
     });
 
     fn.component.create({
         name : 'router',
-        routes : { '#/' : 'home-page', '#/accounts' : 'accounts-page', '#/contacts' : 'contacts-page' },
+        routes : {
+            '#/' : 'home-page',
+            '#/accounts' : 'accounts-page',
+            '#/contacts' : 'contacts-page',
+            '#/deals' : 'deals-page',
+            '#/stages' : 'stages-page',
+        },
         parent : document.body,
     });
 })();
